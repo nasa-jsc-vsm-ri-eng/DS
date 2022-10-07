@@ -20,6 +20,8 @@ Developer's guide information can be generated using Doxygen:
   make -C build/docs/ds-usersguide ds-usersguide
 ```
 
+## VSM Real Time UDP Outpt feature
+
 ## Software Required
 
 cFS Framework (cFE, OSAL, PSP)
