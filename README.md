@@ -22,6 +22,8 @@ Developer's guide information can be generated using Doxygen:
 
 ## VSM Real Time UDP Outpt feature
 
+Basic UDP Output for Realtime output
+
 ## Software Required
 
 cFS Framework (cFE, OSAL, PSP)
