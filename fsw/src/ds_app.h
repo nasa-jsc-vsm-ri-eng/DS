@@ -32,6 +32,10 @@
 
 #include "ds_table.h"
 
+#include "network_includes.h"
+
+#include "trans_udp.h"
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
 /* DS application data structures                                  */
@@ -98,6 +102,8 @@ typedef struct
     uint32 IgnoredPktCounter;  /**< \brief Count of packets discarded (pkt has no filter) */
     uint32 FilteredPktCounter; /**< \brief Count of packets discarded (failed filter test) */
     uint32 PassedPktCounter;   /**< \brief Count of packets that passed filter test */
+
+    IO_TransUdp_t   udp;
 
     DS_AppFileStatus_t FileStatus[DS_DEST_FILE_CNT]; /**< \brief Current state of destination files */
 
@@ -210,4 +216,10 @@ void DS_AppProcessHK(void);
  */
 void DS_AppStorePacket(CFE_SB_MsgId_t MessageID, const CFE_SB_Buffer_t *BufPtr);
 
+/**
+ * \brief UDP Real Time Output
+ * 
+ * \param TBD 
+ */
+void DS_UdpWriteData(const CFE_SB_Buffer_t *BufPtr);
 #endif

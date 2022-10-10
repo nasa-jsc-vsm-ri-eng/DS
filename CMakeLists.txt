@@ -3,6 +3,8 @@ project(CFS_DS C)
 include_directories(fsw/src)
 include_directories(fsw/mission_inc)
 include_directories(fsw/platform_inc)
+include_directories(fsw/public_inc)
+include_directories(${io_lib_MISSION_DIR}/fsw/public_inc)
 
 set(APP_SRC_FILES
   fsw/src/ds_table.c

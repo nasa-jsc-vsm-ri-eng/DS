@@ -273,6 +273,24 @@ int32 DS_AppInitialize(void)
                           DS_MINOR_VERSION, DS_REVISION, DS_MISSION_REV, (void *)&DS_AppData);
     }
 
+
+    /* Create socket for outgoing */
+    if (Result == CFE_SUCCESS)
+    {
+        char * out_port = DS_UDP_OUT_DEST;
+        Result = IO_TransUdpSetDestAddr(&DS_AppData.udp, out_port, DS_UDP_OUT_PORT);                               
+    }
+    printf ("DEBUG-UDP: Dest Set %u\n", Result);
+
+
+    if (Result == CFE_SUCCESS)
+    {
+        IO_TransUdpCreateSocket(&DS_AppData.udp);
+    }
+
+
+
+
     return Result;
 
 } /* End of DS_AppInitialize() */
@@ -610,6 +628,7 @@ void DS_AppProcessHK(void)
 
 void DS_AppStorePacket(CFE_SB_MsgId_t MessageID, const CFE_SB_Buffer_t *BufPtr)
 {
+    uint32 savePassCnt;
 
     if (DS_AppData.AppEnableState == DS_DISABLED)
     {
@@ -631,9 +650,59 @@ void DS_AppStorePacket(CFE_SB_MsgId_t MessageID, const CFE_SB_Buffer_t *BufPtr)
         /*
         ** Store packet (if permitted by filter table)...
         */
+        
+        /* Save this for Passed permitted Checking */
+        savePassCnt = DS_AppData.PassedPktCounter; 
+
+        /* Filter and Store Packet Normal File Store Process */
         DS_FileStorePacket(MessageID, BufPtr);
+
+        /* If Not Filtered and Passed Send Message Copy also to UDP */
+        if  (savePassCnt != DS_AppData.PassedPktCounter )
+        {
+            DS_UdpWriteData(BufPtr);
+        }
+
     }
 } /* End of DS_AppStorePacket() */
+
+
+void DS_UdpWriteData(const CFE_SB_Buffer_t *BufPtr)
+{
+    CFE_SB_MsgId_t      MsgID;
+    uint32              PacketLength;
+    CFE_TIME_SysTime_t  MsgTime;
+    char                udpstr[4096];
+    uint32              sizeudp;
+    
+    CFE_MSG_GetSize(&BufPtr->Msg, &PacketLength);
+    CFE_MSG_GetMsgId(&BufPtr->Msg, &MsgID);
+    CFE_MSG_GetMsgTime(&BufPtr->Msg, &MsgTime);
+
+    /**
+     * @brief FIX ME! Large  Packets will seg fault so throw them out for now.
+     * Fix required later.
+     */
+    if (PacketLength<1024)
+    {
+        char str[(PacketLength*3)];
+        const char * hex = "0123456789ABCDEF";
+        char * pout = str;
+        char * pin = (char * )&BufPtr->Msg;
+        for( int i=0; i<PacketLength; i++ )
+        {
+            pout[0] = hex[(*pin>>4) & 0xF];
+            pout[1] = hex[ *pin     & 0xF];
+            pout[2] = (i<(PacketLength-1))?':':'\0';
+            pout+=3;
+            pin+=1;
+        }
+        sizeudp=snprintf(udpstr,4096,"[%u:%08X:%s]",MsgTime.Seconds,MsgID,str);
+        int iStatus = (int)IO_TransUdpSnd(&DS_AppData.udp,(char *) udpstr,sizeudp);
+    }
+
+
+}
 
 /************************/
 /*  End of File Comment */
